@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Button } from "@/components/ui/button";
+import { Button } from "./ui/button";
 import { Search, Heart } from "lucide-react";
 
 export default function HeroSection() {
@@ -15,7 +15,8 @@ export default function HeroSection() {
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link href="/pets">
             <Button 
-              className="bg-white text-primary px-8 py-4 text-lg hover:bg-gray-100"
+              className="px-8 py-4 text-lg"
+              style={{ backgroundColor: 'white', color: '#22c55e' }}
               data-testid="button-search-pets"
             >
               <Search className="mr-2" />
@@ -25,7 +26,8 @@ export default function HeroSection() {
           <Link href="/application">
             <Button 
               variant="outline"
-              className="border-2 border-white text-white px-8 py-4 text-lg hover:bg-white hover:text-primary"
+              className="px-8 py-4 text-lg"
+              style={{ border: '2px solid white', color: 'white', backgroundColor: 'transparent' }}
               data-testid="button-help"
             >
               <Heart className="mr-2" />
