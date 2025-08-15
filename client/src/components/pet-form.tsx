@@ -185,7 +185,7 @@ export default function PetForm({ onSuccess }: PetFormProps) {
             <FormItem>
               <FormLabel>Зургийн холбоос</FormLabel>
               <FormControl>
-                <Input placeholder="https://example.com/image.jpg" {...field} data-testid="input-pet-image" />
+                <Input placeholder="https://example.com/image.jpg" {...field} value={field.value || ""} data-testid="input-pet-image" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -233,12 +233,13 @@ export default function PetForm({ onSuccess }: PetFormProps) {
                         >
                           <FormControl>
                             <Checkbox
-                              checked={field.value?.includes(option)}
+                              checked={field.value?.includes(option) || false}
                               onCheckedChange={(checked) => {
+                                const currentValue = field.value || [];
                                 return checked
-                                  ? field.onChange([...field.value, option])
+                                  ? field.onChange([...currentValue, option])
                                   : field.onChange(
-                                      field.value?.filter(
+                                      currentValue.filter(
                                         (value) => value !== option
                                       )
                                     )

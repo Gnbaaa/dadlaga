@@ -49,6 +49,52 @@ export class MemStorage implements IStorage {
     this.pets = new Map();
     this.applications = new Map();
     this.adoptions = new Map();
+    
+    // Add sample data
+    this.initializeSampleData();
+  }
+
+  private async initializeSampleData() {
+    // Sample pets
+    const samplePets = [
+      {
+        name: "Бар",
+        species: "нохой",
+        breed: "Голден Ретривер",
+        age: "2 настай",
+        weight: "25 кг",
+        gender: "эр",
+        description: "Бар бол маш найрсаг, хүүхдүүдтэй дуртай нохой. Тоглох дуртай, сахилга батыг сайн дагадаг.",
+        healthStatus: ["эрүүл", "вакцинжуулсан", "стерилизацилагдсан"],
+        imageUrl: null,
+      },
+      {
+        name: "Луна",
+        species: "муур",
+        breed: "Перс",
+        age: "1 настай",
+        weight: "4 кг",
+        gender: "эм",
+        description: "Луна бол тайван, инээмсэглэх дуртай муур. Гэрт суух дуртай, хүмүүстэй ойр дотно болох дуртай.",
+        healthStatus: ["эрүүл", "вакцинжуулсан"],
+        imageUrl: null,
+      },
+      {
+        name: "Чинк",
+        species: "туулай",
+        breed: "Holland Lop",
+        age: "8 сартай",
+        weight: "1.5 кг",
+        gender: "эр",
+        description: "Чинк бол жижиг, хөөрхөн туулай. Хүүхдүүдтэй тоглох дуртай, идэх дуртай.",
+        healthStatus: ["эрүүл", "вакцинжуулсан"],
+        imageUrl: null,
+      }
+    ];
+
+    for (const petData of samplePets) {
+      await this.createPet(petData);
+    }
   }
 
   // User methods
@@ -89,6 +135,8 @@ export class MemStorage implements IStorage {
       id,
       isAdopted: false,
       createdAt: new Date(),
+      healthStatus: insertPet.healthStatus || [],
+      imageUrl: insertPet.imageUrl || null,
     };
     this.pets.set(id, pet);
     return pet;
@@ -136,6 +184,8 @@ export class MemStorage implements IStorage {
       id,
       status: "pending",
       createdAt: new Date(),
+      experience: insertApplication.experience || null,
+      reason: insertApplication.reason || null,
     };
     this.applications.set(id, application);
     return application;
@@ -165,6 +215,7 @@ export class MemStorage implements IStorage {
       ...insertAdoption,
       id,
       adoptionDate: new Date(),
+      story: insertAdoption.story || null,
     };
     this.adoptions.set(id, adoption);
     
