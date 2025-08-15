@@ -66,16 +66,3 @@ export type InsertApplication = z.infer<typeof insertApplicationSchema>;
 export type Adoption = typeof adoptions.$inferSelect;
 export type InsertAdoption = z.infer<typeof insertAdoptionSchema>;
 
-export type User = typeof users.$inferSelect;
-export type InsertUser = z.infer<typeof insertUserSchema>;
-
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-});
-
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-});

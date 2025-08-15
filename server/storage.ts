@@ -1,12 +1,7 @@
-import { type User, type InsertUser, type Pet, type InsertPet, type Application, type InsertApplication, type Adoption, type InsertAdoption } from "@shared/schema";
+import { type Pet, type InsertPet, type Application, type InsertApplication, type Adoption, type InsertAdoption } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
-  // User methods
-  getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
-
   // Pet methods
   getAllPets(): Promise<Pet[]>;
   getPet(id: string): Promise<Pet | undefined>;
@@ -39,13 +34,11 @@ export interface IStorage {
 }
 
 export class MemStorage implements IStorage {
-  private users: Map<string, User>;
   private pets: Map<string, Pet>;
   private applications: Map<string, Application>;
   private adoptions: Map<string, Adoption>;
 
   constructor() {
-    this.users = new Map();
     this.pets = new Map();
     this.applications = new Map();
     this.adoptions = new Map();
@@ -95,24 +88,6 @@ export class MemStorage implements IStorage {
     for (const petData of samplePets) {
       await this.createPet(petData);
     }
-  }
-
-  // User methods
-  async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
-  }
-
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
   }
 
   // Pet methods
