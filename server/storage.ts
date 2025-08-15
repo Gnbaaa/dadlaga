@@ -66,7 +66,7 @@ export class MemStorage implements IStorage {
         gender: "эр",
         description: "Бар бол маш найрсаг, хүүхдүүдтэй дуртай нохой. Тоглох дуртай, сахилга батыг сайн дагадаг.",
         healthStatus: ["эрүүл", "вакцинжуулсан", "стерилизацилагдсан"],
-        imageUrl: null,
+        imageUrl: "https://images.unsplash.com/photo-1552053831-71594a27632d?w=400&h=300&fit=crop&crop=center",
       },
       {
         name: "Луна",
@@ -77,7 +77,7 @@ export class MemStorage implements IStorage {
         gender: "эм",
         description: "Луна бол тайван, инээмсэглэх дуртай муур. Гэрт суух дуртай, хүмүүстэй ойр дотно болох дуртай.",
         healthStatus: ["эрүүл", "вакцинжуулсан"],
-        imageUrl: null,
+        imageUrl: "https://images.unsplash.com/photo-1596854407944-bf87f6fdd49e?w=400&h=300&fit=crop&crop=center",
       },
       {
         name: "Чинк",
@@ -88,7 +88,7 @@ export class MemStorage implements IStorage {
         gender: "эр",
         description: "Чинк бол жижиг, хөөрхөн туулай. Хүүхдүүдтэй тоглох дуртай, идэх дуртай.",
         healthStatus: ["эрүүл", "вакцинжуулсан"],
-        imageUrl: null,
+        imageUrl: "https://images.unsplash.com/photo-1585110396000-c9ffd4e4b308?w=400&h=300&fit=crop&crop=center",
       }
     ];
 
