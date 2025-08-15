@@ -118,7 +118,11 @@ export default function StaffDashboard() {
             <CardContent className="space-y-4">
               <Dialog open={isAddPetOpen} onOpenChange={setIsAddPetOpen}>
                 <DialogTrigger asChild>
-                  <Button className="w-full bg-primary hover:bg-green-600" data-testid="button-add-pet">
+                  <Button 
+                    className="w-full" 
+                    style={{ backgroundColor: '#22c55e', color: 'white' }}
+                    data-testid="button-add-pet"
+                  >
                     <Plus className="w-4 h-4 mr-2" />
                     Шинэ амьтан нэмэх
                   </Button>

@@ -293,7 +293,12 @@ export default function Application() {
                   </Button>
                   
                   {currentStep < totalSteps ? (
-                    <Button type="button" onClick={nextStep} data-testid="button-next">
+                    <Button 
+                      type="button" 
+                      onClick={nextStep} 
+                      style={{ backgroundColor: '#22c55e', color: 'white' }}
+                      data-testid="button-next"
+                    >
                       Дараах
                       <ArrowRight className="w-4 h-4 ml-2" />
                     </Button>
@@ -301,7 +306,7 @@ export default function Application() {
                     <Button 
                       type="submit" 
                       disabled={mutation.isPending}
-                      className="bg-primary hover:bg-green-600"
+                      style={{ backgroundColor: '#22c55e', color: 'white' }}
                       data-testid="button-submit"
                     >
                       {mutation.isPending ? (

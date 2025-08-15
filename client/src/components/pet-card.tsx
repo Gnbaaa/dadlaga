@@ -86,7 +86,8 @@ export default function PetCard({ pet }: PetCardProps) {
         
         <Link href={`/pets/${pet.id}`}>
           <Button 
-            className="w-full bg-primary hover:bg-green-600 text-white"
+            className="w-full" 
+            style={{ backgroundColor: '#22c55e', color: 'white' }}
             data-testid={`button-view-details-${pet.id}`}
           >
             Дэлгэрэнгүй үзэх
