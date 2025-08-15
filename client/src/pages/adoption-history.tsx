@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Heart, Calendar } from "lucide-react";
-import AdoptionStory from "@/components/adoption-story";
+import AdoptionStory from "../components/adoption-story";
 
 export default function AdoptionHistory() {
   const { data: adoptions, isLoading: adoptionsLoading } = useQuery<Adoption[]>({
@@ -79,19 +79,19 @@ export default function AdoptionHistory() {
             <div className="flex items-center justify-center space-x-8">
               <div className="text-center">
                 <div className="text-3xl font-bold text-primary mb-1" data-testid="stat-total-adopted">
-                  {stats?.totalAdopted || 0}
+                  {(stats as any)?.totalAdopted || 0}
                 </div>
                 <div className="text-gray-600">Үрчлэгдсэн</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-primary mb-1" data-testid="stat-current-pets">
-                  {stats?.currentPets || 0}
+                  {(stats as any)?.currentPets || 0}
                 </div>
                 <div className="text-gray-600">Хүлээж буй</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-primary mb-1" data-testid="stat-happy-families">
-                  {stats?.happyFamilies || 0}
+                  {(stats as any)?.happyFamilies || 0}
                 </div>
                 <div className="text-gray-600">Аз жаргалтай гэр бүл</div>
               </div>

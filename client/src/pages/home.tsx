@@ -1,5 +1,5 @@
-import HeroSection from "@/components/hero-section";
-import PetCard from "@/components/pet-card";
+import HeroSection from "../components/hero-section";
+import PetCard from "../components/pet-card";
 import { useQuery } from "@tanstack/react-query";
 import { Pet } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";

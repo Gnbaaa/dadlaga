@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import PetForm from "@/components/pet-form";
+import PetForm from "../components/pet-form";
 import { Plus, FileText, Heart, Eye, Check, X } from "lucide-react";
 
 export default function StaffDashboard() {
@@ -173,25 +173,25 @@ export default function StaffDashboard() {
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Өнөөдрийн өргөдөл</span>
                     <span className="text-2xl font-bold text-primary" data-testid="stat-today-applications">
-                      {stats?.todayApplications || 0}
+                      {(stats as any)?.todayApplications || 0}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Энэ сарын үрчлэлт</span>
                     <span className="text-2xl font-bold text-secondary" data-testid="stat-monthly-adoptions">
-                      {stats?.monthlyAdoptions || 0}
+                      {(stats as any)?.monthlyAdoptions || 0}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Идэвхтэй амьтан</span>
                     <span className="text-2xl font-bold text-blue-500" data-testid="stat-active-pets">
-                      {stats?.activePets || 0}
+                      {(stats as any)?.activePets || 0}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Хүлээгдэж буй өргөдөл</span>
                     <span className="text-2xl font-bold text-accent" data-testid="stat-pending-applications">
-                      {stats?.pendingApplications || 0}
+                      {(stats as any)?.pendingApplications || 0}
                     </span>
                   </div>
                 </div>
