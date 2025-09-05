@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search } from "lucide-react";
+import { getQueryFn } from "@/lib/queryClient";
 
 export default function Pets() {
   const [speciesFilter, setSpeciesFilter] = useState("all");
@@ -15,6 +16,7 @@ export default function Pets() {
 
   const { data: pets, isLoading } = useQuery<Pet[]>({
     queryKey: ["/api/pets"],
+    queryFn: getQueryFn({ on401: "returnNull" }),
   });
 
   const filteredPets = pets?.filter((pet) => {
@@ -71,7 +73,7 @@ export default function Pets() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Бүх нас</SelectItem>
-                <SelectItem value="сар">Зээрд (0-6 сар)</SelectItem>
+                <SelectItem value="сар">Зулзага (0-6 сар)</SelectItem>
                 <SelectItem value="1 жил">Залуу (6сар-2жил)</SelectItem>
                 <SelectItem value="2 жил">Том (2-7жил)</SelectItem>
                 <SelectItem value="7 жил">Хөгшин (7+ жил)</SelectItem>

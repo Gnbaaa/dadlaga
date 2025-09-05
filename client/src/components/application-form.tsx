@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { insertApplicationSchema } from "@shared/schema";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { insertApplicationSchema, type Pet } from "@shared/schema";
+import { apiRequest, queryClient, getQueryFn } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -29,7 +29,15 @@ interface ApplicationFormProps {
 export default function ApplicationForm({ petId, onSuccess }: ApplicationFormProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const { toast } = useToast();
-  const totalSteps = 3;
+  const totalSteps = petId ? 3 : 4; // Add extra step for pet selection if no pet is pre-selected
+
+  // Fetch available pets if no specific pet is selected
+  const { data: pets } = useQuery<Pet[]>({
+    queryKey: ["/api/pets"],
+    queryFn: getQueryFn({ on401: "returnNull" }),
+    enabled: !petId,
+    select: (data) => data.filter(pet => !pet.isAdopted), // Only show available pets
+  });
 
   const form = useForm<ApplicationForm>({
     resolver: zodResolver(applicationFormSchema),
@@ -96,8 +104,9 @@ export default function ApplicationForm({ petId, onSuccess }: ApplicationFormPro
             Алхам {currentStep} / {totalSteps}
           </span>
           <span className="text-sm font-medium text-primary">
-            {currentStep === 1 ? "Хувийн мэдээлэл" : 
-             currentStep === 2 ? "Амьдрах нөхцөл" : "Туршлага"}
+            {currentStep === 1 && !petId ? "Амьтан сонгох" :
+             currentStep === (petId ? 1 : 2) ? "Хувийн мэдээлэл" : 
+             currentStep === (petId ? 2 : 3) ? "Амьдрах нөхцөл" : "Туршлага"}
           </span>
         </div>
         <Progress value={progress} className="h-2" />
@@ -105,8 +114,81 @@ export default function ApplicationForm({ petId, onSuccess }: ApplicationFormPro
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          {/* Step 1: Personal Information */}
-          {currentStep === 1 && (
+          {/* Step 1: Pet Selection (only if no pet is pre-selected) */}
+          {currentStep === 1 && !petId && (
+            <div className="space-y-6">
+              <div className="text-center mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Үрчлэх амьтанаа сонгоно уу
+                </h3>
+                <p className="text-gray-600">
+                  Доорх жагсаалтаас үрчлэх амьтанаа сонгоно уу
+                </p>
+              </div>
+              
+              <FormField
+                control={form.control}
+                name="petId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Амьтан *</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Үрчлэх амьтанаа сонгоно уу" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {pets?.map((pet) => (
+                          <SelectItem key={pet.id} value={pet.id}>
+                            {pet.name} - {pet.species} ({pet.breed})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Show selected pet image */}
+              {form.watch("petId") && (
+                <div className="mt-6">
+                  {(() => {
+                    const selectedPet = pets?.find(pet => pet.id === form.watch("petId"));
+                    if (selectedPet) {
+                      return (
+                        <div className="bg-gray-50 rounded-lg p-6 border">
+                          <div className="flex items-center space-x-4">
+                            <div className="flex-shrink-0">
+                              <img
+                                src={selectedPet.imageUrl ?? "https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=96&h=96&fit=crop&crop=center"}
+                                alt={selectedPet.name}
+                                className="w-24 h-24 object-cover rounded-lg"
+                                onError={(e) => {
+                                  e.currentTarget.src = "https://images.unsplash.com/photo-1450778869180-41d0601e046e?w=96&h=96&fit=crop&crop=center";
+                                }}
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="text-lg font-semibold text-gray-900">{selectedPet.name}</h4>
+                              <p className="text-gray-600">{selectedPet.species} • {selectedPet.breed}</p>
+                              <p className="text-gray-600">{selectedPet.age} • {selectedPet.gender}</p>
+                              <p className="text-gray-600 mt-2">{selectedPet.description}</p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Step 1/2: Personal Information */}
+          {currentStep === (petId ? 1 : 2) && (
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
@@ -174,8 +256,8 @@ export default function ApplicationForm({ petId, onSuccess }: ApplicationFormPro
             </div>
           )}
 
-          {/* Step 2: Living Conditions */}
-          {currentStep === 2 && (
+          {/* Step 2/3: Living Conditions */}
+          {currentStep === (petId ? 2 : 3) && (
             <div className="space-y-6">
               <FormField
                 control={form.control}
@@ -220,8 +302,8 @@ export default function ApplicationForm({ petId, onSuccess }: ApplicationFormPro
             </div>
           )}
 
-          {/* Step 3: Experience and Reason */}
-          {currentStep === 3 && (
+          {/* Step 3/4: Experience and Reason */}
+          {currentStep === (petId ? 3 : 4) && (
             <div className="space-y-6">
               <FormField
                 control={form.control}
@@ -274,7 +356,11 @@ export default function ApplicationForm({ petId, onSuccess }: ApplicationFormPro
             </Button>
             
             {currentStep < totalSteps ? (
-              <Button type="button" onClick={nextStep}>
+              <Button 
+                type="button" 
+                onClick={nextStep}
+                disabled={currentStep === 1 && !petId && !form.watch("petId")}
+              >
                 Дараах
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
@@ -282,7 +368,7 @@ export default function ApplicationForm({ petId, onSuccess }: ApplicationFormPro
               <Button 
                 type="submit" 
                 disabled={mutation.isPending}
-                className="bg-primary hover:bg-green-600"
+                style={{ backgroundColor: '#22c55e', color: 'white' }}
               >
                 {mutation.isPending ? (
                   "Илгээж байна..."

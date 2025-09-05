@@ -68,8 +68,7 @@ export default function PetForm({ onSuccess }: PetFormProps) {
   const healthStatusOptions = [
     "эрүүл",
     "вакцинжуулсан",
-    "стерилизацилагдсан",
-    "хэрэгцээтэй"
+    "үржил хаасан",
   ];
 
   return (
@@ -263,7 +262,8 @@ export default function PetForm({ onSuccess }: PetFormProps) {
 
         <Button 
           type="submit" 
-          className="w-full bg-primary hover:bg-green-600" 
+          className="w-full" 
+          style={{ backgroundColor: '#22c55e', color: 'white' }}
           disabled={mutation.isPending}
           data-testid="button-submit-pet"
         >

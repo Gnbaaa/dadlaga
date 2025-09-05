@@ -1,4 +1,4 @@
-import { type Pet, type InsertPet, type Application, type InsertApplication, type Adoption, type InsertAdoption } from "@shared/schema";
+import { type Pet, type InsertPet, type Application, type InsertApplication, type Adoption, type InsertAdoption, type StaffUser, type InsertStaffUser } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -31,17 +31,28 @@ export interface IStorage {
     activePets: number;
     pendingApplications: number;
   }>;
+
+  // Staff User methods
+  getAllStaffUsers(): Promise<StaffUser[]>;
+  getStaffUserById(id: string): Promise<StaffUser | undefined>;
+  getStaffUserByUsername(username: string): Promise<StaffUser | undefined>;
+  createStaffUser(user: InsertStaffUser): Promise<StaffUser>;
+  updateStaffUser(id: string, updates: Partial<InsertStaffUser>): Promise<StaffUser | undefined>;
+  updateStaffUserLastLogin(id: string): Promise<boolean>;
+  deactivateStaffUser(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
   private pets: Map<string, Pet>;
   private applications: Map<string, Application>;
   private adoptions: Map<string, Adoption>;
+  private staffUsers: Map<string, StaffUser>;
 
   constructor() {
     this.pets = new Map();
     this.applications = new Map();
     this.adoptions = new Map();
+    this.staffUsers = new Map();
     
     // Add sample data
     this.initializeSampleData();
@@ -58,7 +69,7 @@ export class MemStorage implements IStorage {
         weight: "25 кг",
         gender: "эр",
         description: "Бар бол маш найрсаг, хүүхдүүдтэй дуртай нохой. Тоглох дуртай, сахилга батыг сайн дагадаг.",
-        healthStatus: ["эрүүл", "вакцинжуулсан", "стерилизацилагдсан"],
+        healthStatus: ["эрүүл", "вакцинжуулсан", "үржил хаасан"],
         imageUrl: "https://images.unsplash.com/photo-1552053831-71594a27632d?w=400&h=300&fit=crop&crop=center",
       },
       {
@@ -88,6 +99,92 @@ export class MemStorage implements IStorage {
     for (const petData of samplePets) {
       await this.createPet(petData);
     }
+
+    // Sample staff users (password: "admin123")
+    // Using a pre-generated bcrypt hash for "admin123" with salt rounds 12
+    const sampleStaffUsers = [
+      {
+        username: "admin",
+        email: "admin@petconnect.mn",
+        passwordHash: "$2b$12$0i7G57e8L16tpRfF6n11SuhG9Cll7jzp9cVaEQXn9jTlI2nMsLY6G", // admin123
+        fullName: "Админ Хэрэглэгч",
+        role: "admin",
+        isActive: true,
+      },
+      {
+        username: "staff1",
+        email: "staff1@petconnect.mn",
+        passwordHash: "$2b$12$0i7G57e8L16tpRfF6n11SuhG9Cll7jzp9cVaEQXn9jTlI2nMsLY6G", // admin123
+        fullName: "Ажилтан 1",
+        role: "staff",
+        isActive: true,
+      }
+    ];
+
+    for (const userData of sampleStaffUsers) {
+      await this.createStaffUser(userData);
+    }
+  }
+
+  // Staff User methods
+  async getAllStaffUsers(): Promise<StaffUser[]> {
+    return Array.from(this.staffUsers.values());
+  }
+
+  async getStaffUserById(id: string): Promise<StaffUser | undefined> {
+    return this.staffUsers.get(id);
+  }
+
+  async getStaffUserByUsername(username: string): Promise<StaffUser | undefined> {
+    return Array.from(this.staffUsers.values()).find(user => user.username === username);
+  }
+
+  async createStaffUser(insertStaffUser: InsertStaffUser): Promise<StaffUser> {
+    const id = randomUUID();
+    const now = new Date();
+    const user: StaffUser = {
+      ...insertStaffUser,
+      id,
+      role: insertStaffUser.role || "staff",
+      isActive: true,
+      lastLoginAt: null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.staffUsers.set(id, user);
+    return user;
+  }
+
+  async updateStaffUser(id: string, updates: Partial<InsertStaffUser>): Promise<StaffUser | undefined> {
+    const user = this.staffUsers.get(id);
+    if (!user) return undefined;
+    
+    const updatedUser: StaffUser = { 
+      ...user, 
+      ...updates, 
+      updatedAt: new Date() 
+    };
+    this.staffUsers.set(id, updatedUser);
+    return updatedUser;
+  }
+
+  async updateStaffUserLastLogin(id: string): Promise<boolean> {
+    const user = this.staffUsers.get(id);
+    if (!user) return false;
+    
+    user.lastLoginAt = new Date();
+    this.staffUsers.set(id, user);
+    return true;
+  }
+
+  async deactivateStaffUser(id: string): Promise<boolean> {
+    const user = this.staffUsers.get(id);
+    if (!user) return false;
+    
+    user.isActive = false;
+    user.updatedAt = new Date();
+    this.staffUsers.set(id, user);
+    return true;
   }
 
   // Pet methods

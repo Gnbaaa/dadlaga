@@ -7,24 +7,37 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 import PetForm from "../components/pet-form";
-import { Plus, FileText, Heart, Eye, Check, X } from "lucide-react";
+import { Plus, FileText, Heart, Eye, Check, X, User, LogOut } from "lucide-react";
 
 export default function StaffDashboard() {
   const [isAddPetOpen, setIsAddPetOpen] = useState(false);
   const { toast } = useToast();
+  const { user, logout, isLoading: authLoading } = useAuth();
 
-  const { data: stats, isLoading: statsLoading } = useQuery({
+  type Stats = {
+    todayApplications: number;
+    monthlyAdoptions: number;
+    activePets: number;
+    pendingApplications: number;
+  };
+
+  const { data: stats, isLoading: statsLoading, error: statsError } = useQuery<Stats>({
     queryKey: ["/api/stats"],
+    retry: 1,
   });
 
-  const { data: applications, isLoading: applicationsLoading } = useQuery<Application[]>({
+  const { data: applications, isLoading: applicationsLoading, error: applicationsError } = useQuery<Application[]>({
     queryKey: ["/api/applications"],
+    retry: 1,
   });
 
-  const { data: allPets, isLoading: petsLoading } = useQuery<Pet[]>({
+  const { data: allPets, isLoading: petsLoading, error: petsError } = useQuery<Pet[]>({
     queryKey: ["/api/pets/all"],
+    retry: 1,
   });
 
   const updateApplicationMutation = useMutation({
@@ -80,6 +93,22 @@ export default function StaffDashboard() {
     });
   };
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast({
+        title: "Амжилттай гарлаа",
+        description: "Системээс гарлаа.",
+      });
+    } catch (error) {
+      toast({
+        title: "Алдаа гарлаа",
+        description: "Гарахад алдаа гарлаа.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "pending":
@@ -97,23 +126,80 @@ export default function StaffDashboard() {
     return allPets?.find(pet => pet.id === petId);
   };
 
+  // Show loading state while authentication is being checked
+  if (authLoading) {
+    return (
+      <div className="bg-gray-100 py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <Skeleton className="h-8 w-64 mx-auto mb-4" />
+            <Skeleton className="h-4 w-96 mx-auto" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error if user is not authenticated
+  if (!user) {
+    return (
+      <div className="bg-gray-100 py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-red-600 mb-4">Нэвтрэх шаардлагатай</h1>
+            <p className="text-gray-600 mb-4">Энэ хуудсыг харахын тулд нэвтрэх шаардлагатай.</p>
+            <Button onClick={() => window.location.href = '/login'}>
+              Нэвтрэх
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-gray-100 py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">
-            Ажилтны самбар
-          </h1>
-          <p className="text-xl text-gray-600">
-            Амьтан болон өргөдлийн мэдээллийг удирдах
-          </p>
+        {/* Header with user info */}
+        <div className="flex justify-between items-center mb-12">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Ажилтны самбар
+            </h1>
+            <p className="text-xl text-gray-600">
+              Амьтан болон өргөдлийн мэдээллийг удирдах
+            </p>
+          </div>
+          
+          {/* User info and logout */}
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3 bg-white rounded-lg px-4 py-2 shadow-sm">
+              <Avatar className="w-8 h-8">
+                <AvatarFallback className="bg-green-100 text-green-600 text-sm">
+                  {user?.fullName.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="text-sm">
+                <p className="font-medium text-gray-900">{user?.fullName}</p>
+                <p className="text-gray-500">{user?.role === "admin" ? "Админ" : "Ажилтан"}</p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              onClick={handleLogout}
+              className="flex items-center space-x-2"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Гарах</span>
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Quick Actions */}
           <Card>
             <CardHeader>
-              <CardTitle>Хурдан үйлдэл</CardTitle>
+              <CardTitle>Үйлдэл</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <Dialog open={isAddPetOpen} onOpenChange={setIsAddPetOpen}>
@@ -172,30 +258,42 @@ export default function StaffDashboard() {
                     </div>
                   ))}
                 </div>
+              ) : statsError ? (
+                <div className="text-center py-4">
+                  <p className="text-red-500 text-sm">Статистик татахад алдаа гарлаа</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => window.location.reload()}
+                    className="mt-2"
+                  >
+                    Дахин оролдох
+                  </Button>
+                </div>
               ) : (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Өнөөдрийн өргөдөл</span>
                     <span className="text-2xl font-bold text-primary" data-testid="stat-today-applications">
-                      {(stats as any)?.todayApplications || 0}
+                      {stats?.todayApplications || 0}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Энэ сарын үрчлэлт</span>
                     <span className="text-2xl font-bold text-secondary" data-testid="stat-monthly-adoptions">
-                      {(stats as any)?.monthlyAdoptions || 0}
+                      {stats?.monthlyAdoptions || 0}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Идэвхтэй амьтан</span>
                     <span className="text-2xl font-bold text-blue-500" data-testid="stat-active-pets">
-                      {(stats as any)?.activePets || 0}
+                      {stats?.activePets || 0}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Хүлээгдэж буй өргөдөл</span>
                     <span className="text-2xl font-bold text-accent" data-testid="stat-pending-applications">
-                      {(stats as any)?.pendingApplications || 0}
+                      {stats?.pendingApplications || 0}
                     </span>
                   </div>
                 </div>
@@ -245,6 +343,17 @@ export default function StaffDashboard() {
                   </div>
                 ))}
               </div>
+            ) : applicationsError ? (
+              <div className="text-center py-8">
+                <p className="text-red-500">Өргөдлийн мэдээлэл татахад алдаа гарлаа</p>
+                <Button 
+                  variant="outline" 
+                  onClick={() => window.location.reload()}
+                  className="mt-2"
+                >
+                  Дахин оролдох
+                </Button>
+              </div>
             ) : applications && applications.length > 0 ? (
               <div className="space-y-4">
                 {applications.slice(0, 10).map((application) => {
@@ -269,7 +378,8 @@ export default function StaffDashboard() {
                             <Button
                               size="sm"
                               variant="outline"
-                              className="text-green-600 border-green-200 hover:bg-green-50"
+                              style={{ color: '#16a34a', borderColor: '#bbf7d0', backgroundColor: 'transparent' }}
+                              className="hover:bg-green-50"
                               onClick={() => handleApproveApplication(application)}
                               disabled={updateApplicationMutation.isPending || createAdoptionMutation.isPending}
                               data-testid={`button-approve-${application.id}`}
@@ -279,7 +389,8 @@ export default function StaffDashboard() {
                             <Button
                               size="sm"
                               variant="outline"
-                              className="text-red-600 border-red-200 hover:bg-red-50"
+                              style={{ color: '#dc2626', borderColor: '#fecaca', backgroundColor: 'transparent' }}
+                              className="hover:bg-red-50"
                               onClick={() => updateApplicationMutation.mutate({
                                 id: application.id,
                                 status: "rejected"

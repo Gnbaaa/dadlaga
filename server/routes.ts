@@ -1,23 +1,76 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertPetSchema, insertApplicationSchema, insertAdoptionSchema } from "@shared/schema";
+import { authService } from "./auth";
+import { requireAuth, requireAdmin } from "./middleware";
+import { insertPetSchema, insertApplicationSchema, insertAdoptionSchema, loginSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Pet routes
-  app.get("/api/pets", async (req, res) => {
+  // Authentication routes
+  app.post("/api/auth/login", async (req, res) => {
     try {
-      const pets = await storage.getAvailablePets();
-      res.json(pets);
+      const credentials = loginSchema.parse(req.body);
+      const user = await authService.authenticateUser(credentials);
+      
+      if (!user) {
+        return res.status(401).json({ 
+          message: "Хэрэглэгчийн нэр эсвэл нууц үг буруу байна",
+          code: "INVALID_CREDENTIALS"
+        });
+      }
+
+      // Set session
+      req.session.userId = user.id;
+      req.session.user = {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role,
+      };
+
+      res.json({
+        message: "Амжилттай нэвтэрлээ",
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          fullName: user.fullName,
+          role: user.role,
+        }
+      });
     } catch (error) {
-      res.status(500).json({ message: "Амьтдын мэдээлэл татахад алдаа гарлаа" });
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Мэдээлэл буруу байна", errors: error.errors });
+      }
+      res.status(500).json({ message: "Нэвтрэхэд алдаа гарлаа" });
     }
   });
 
-  app.get("/api/pets/all", async (req, res) => {
+  app.post("/api/auth/logout", (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ message: "Гарахад алдаа гарлаа" });
+      }
+      res.json({ message: "Амжилттай гарлаа" });
+    });
+  });
+
+  app.get("/api/auth/me", (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ 
+        message: "Нэвтрэх шаардлагатай",
+        code: "UNAUTHORIZED"
+      });
+    }
+    res.json({ user: req.user });
+  });
+
+  // Public routes
+  app.get("/api/pets", async (req, res) => {
     try {
-      const pets = await storage.getAllPets();
+      const pets = await storage.getAvailablePets();
       res.json(pets);
     } catch (error) {
       res.status(500).json({ message: "Амьтдын мэдээлэл татахад алдаа гарлаа" });
@@ -36,7 +89,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/pets", async (req, res) => {
+  app.post("/api/applications", async (req, res) => {
+    try {
+      const validatedData = insertApplicationSchema.parse(req.body);
+      const application = await storage.createApplication(validatedData);
+      res.status(201).json(application);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Мэдээлэл буруу байна", errors: error.errors });
+      }
+      res.status(500).json({ message: "Өргөдөл илгээхэд алдаа гарлаа" });
+    }
+  });
+
+  // Protected staff routes
+  app.get("/api/pets/all", requireAuth, async (req, res) => {
+    try {
+      const pets = await storage.getAllPets();
+      res.json(pets);
+    } catch (error) {
+      res.status(500).json({ message: "Амьтдын мэдээлэл татахад алдаа гарлаа" });
+    }
+  });
+
+  app.post("/api/pets", requireAuth, async (req, res) => {
     try {
       const validatedData = insertPetSchema.parse(req.body);
       const pet = await storage.createPet(validatedData);
@@ -49,7 +125,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/pets/:id", async (req, res) => {
+  app.patch("/api/pets/:id", requireAuth, async (req, res) => {
     try {
       const updates = insertPetSchema.partial().parse(req.body);
       const pet = await storage.updatePet(req.params.id, updates);
@@ -65,7 +141,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/pets/:id", async (req, res) => {
+  app.delete("/api/pets/:id", requireAuth, async (req, res) => {
     try {
       const success = await storage.deletePet(req.params.id);
       if (!success) {
@@ -77,8 +153,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Application routes
-  app.get("/api/applications", async (req, res) => {
+  // Application routes (staff only)
+  app.get("/api/applications", requireAuth, async (req, res) => {
     try {
       const applications = await storage.getAllApplications();
       res.json(applications);
@@ -87,7 +163,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/applications/:id", async (req, res) => {
+  app.get("/api/applications/:id", requireAuth, async (req, res) => {
     try {
       const application = await storage.getApplication(req.params.id);
       if (!application) {
@@ -99,20 +175,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/applications", async (req, res) => {
-    try {
-      const validatedData = insertApplicationSchema.parse(req.body);
-      const application = await storage.createApplication(validatedData);
-      res.status(201).json(application);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Мэдээлэл буруу байна", errors: error.errors });
-      }
-      res.status(500).json({ message: "Өргөдөл илгээхэд алдаа гарлаа" });
-    }
-  });
-
-  app.patch("/api/applications/:id/status", async (req, res) => {
+  app.patch("/api/applications/:id/status", requireAuth, async (req, res) => {
     try {
       const { status } = req.body;
       if (!["pending", "approved", "rejected"].includes(status)) {
@@ -129,8 +192,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Adoption routes
-  app.get("/api/adoptions", async (req, res) => {
+  // Adoption routes (staff only)
+  app.get("/api/adoptions", requireAuth, async (req, res) => {
     try {
       const adoptions = await storage.getAllAdoptions();
       res.json(adoptions);
@@ -139,7 +202,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/adoptions", async (req, res) => {
+  app.post("/api/adoptions", requireAuth, async (req, res) => {
     try {
       const validatedData = insertAdoptionSchema.parse(req.body);
       const adoption = await storage.createAdoption(validatedData);
@@ -152,13 +215,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Statistics route
-  app.get("/api/stats", async (req, res) => {
+  // Statistics route (staff only)
+  app.get("/api/stats", requireAuth, async (req, res) => {
     try {
       const stats = await storage.getAdoptionStats();
       res.json(stats);
     } catch (error) {
       res.status(500).json({ message: "Статистик татахад алдаа гарлаа" });
+    }
+  });
+
+  // Staff management routes (admin only)
+  app.get("/api/staff/users", requireAdmin, async (req, res) => {
+    try {
+      const users = await storage.getAllStaffUsers();
+      res.json(users.map(user => ({
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role,
+        isActive: user.isActive,
+        lastLoginAt: user.lastLoginAt,
+        createdAt: user.createdAt,
+      })));
+    } catch (error) {
+      res.status(500).json({ message: "Ажилтны мэдээлэл татахад алдаа гарлаа" });
     }
   });
 

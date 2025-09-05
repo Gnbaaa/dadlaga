@@ -1,10 +1,34 @@
 import express, { type Request, Response, NextFunction } from "express";
+import "./middleware";
+import session from "express-session";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
+
+// Session configuration
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'petconnect-secret-key-change-in-production',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+  },
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Authentication middleware
+app.use((req: Request, res: Response, next: NextFunction) => {
+  // Set user from session if available
+  if (req.session.userId) {
+    req.user = req.session.user;
+  }
+  next();
+});
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -56,16 +80,27 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = parseInt(process.env.PORT || '5000', 10);
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
-  });
+  // Serve the app on the port specified in the environment variable PORT
+  // Default to 5001 if not specified to avoid conflicts.
+  // This serves both the API and the client.
+  const port = parseInt(process.env.PORT || '3001', 10);
+  
+  const startServer = (attemptPort: number) => {
+    server.listen({
+      port: attemptPort,
+      host: "0.0.0.0",
+    }, () => {
+      log(`serving on port ${attemptPort}`);
+    }).on('error', (err: any) => {
+      if (err.code === 'EADDRINUSE') {
+        log(`Port ${attemptPort} is in use, trying ${attemptPort + 1}`);
+        startServer(attemptPort + 1);
+      } else {
+        log(`Server error: ${err.message}`);
+        process.exit(1);
+      }
+    });
+  };
+  
+  startServer(port);
 })();

@@ -154,7 +154,7 @@ export default function PetDetails() {
             {/* Adoption Button */}
             {!pet.isAdopted && (
               <Link href={`/application/${pet.id}`}>
-                <Button className="w-full bg-primary hover:bg-green-600 text-white py-4 text-lg" data-testid="button-adopt">
+                <Button className="w-full py-4 text-lg" style={{ backgroundColor: '#22c55e', color: 'white' }} data-testid="button-adopt">
                   <Heart className="w-5 h-5 mr-2" />
                   Үрчлэх өргөдөл гаргах
                 </Button>
